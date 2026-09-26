@@ -51,7 +51,19 @@ jobs:
         run: yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
 
       - name: Build APK
-        run: ./gradlew --no-daemon --stacktrace assembleRelease
+        run: |
+          set +e
+          ./gradlew --no-daemon --stacktrace assembleRelease > build.log 2>&1
+          rc=$?
+          cat build.log
+          if [ $rc -ne 0 ]; then
+            # Surface the failure as a check annotation: job logs need admin
+            # rights to read over the API, annotations do not.
+            tail -n 60 build.log | sed 's/\r$//' | while IFS= read -r line; do
+              echo "::error::${line}"
+            done
+          fi
+          exit $rc
 
       - name: Check the exploit really made it into the APK
         run: |
