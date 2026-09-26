@@ -57,11 +57,19 @@ jobs:
           rc=$?
           cat build.log
           if [ $rc -ne 0 ]; then
-            # Surface the failure as a check annotation: job logs need admin
-            # rights to read over the API, annotations do not.
-            tail -n 60 build.log | sed 's/\r$//' | while IFS= read -r line; do
-              echo "::error::${line}"
-            done
+            # Surface the failure as check annotations: job logs need admin
+            # rights to read over the API, annotations do not. Gradle buries the
+            # human-readable cause above a very long stack trace, so pull the
+            # "What went wrong" block and the Caused-by chain specifically.
+            emit() { while IFS= read -r l; do echo "::error::${l}"; done; }
+            echo "::error::=== log head ==="
+            head -25 build.log | emit
+            echo "::error::=== what went wrong ==="
+            awk '/^\* What went wrong:/{p=1} p&&/^\* Try:/{p=0} p' build.log | head -40 | emit
+            echo "::error::=== caused by ==="
+            grep -n "Caused by:" build.log | head -12 | emit
+            echo "::error::=== matched errors ==="
+            grep -nE "^> |error:|Could not|Unsupported|not accepted|requires|No matching" build.log | head -25 | emit
           fi
           exit $rc
 
