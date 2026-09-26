@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GhostLock MEP-AN00</string>
+    <string name="pick_boot">选择 boot.img</string>
+    <string name="activate">激活</string>
+</resources>

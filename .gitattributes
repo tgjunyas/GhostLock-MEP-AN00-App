@@ -1,0 +1,11 @@
+# gradlew must keep LF or Linux CI fails with "bad interpreter".
+* text=auto eol=lf
+gradlew text eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
+
+# Binary: never touch these.
+*.so binary
+*.jar binary
+*.webp binary
+*.apk binary

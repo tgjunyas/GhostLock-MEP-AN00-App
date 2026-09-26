@@ -1,0 +1,38 @@
+name: build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Build APK
+        run: ./gradlew --no-daemon --stacktrace assembleRelease
+
+      - name: Check the exploit really made it into the APK
+        run: |
+          set -e
+          APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
+          echo "APK: $APK"
+          unzip -l "$APK" | grep -E 'libgl\.so' || {
+            echo "libgl.so missing from the APK"; exit 1; }
+          ls -l "$APK"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GhostLock-MEP-AN00
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
