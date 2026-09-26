@@ -9,6 +9,8 @@ on:
 jobs:
   apk:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -83,7 +85,24 @@ jobs:
           ls -l "$APK"
 
       - uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: GhostLock-MEP-AN00
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
+
+      # Job logs need admin rights to read over the API, which makes debugging a
+      # red run awkward from a script. On failure, park the full log on its own
+      # branch instead; it is plain `git show` material afterwards.
+      - name: Publish the build log to the ci-logs branch
+        if: failure()
+        run: |
+          set -eu
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B ci-logs
+          mkdir -p .ci-logs
+          if [ -f build.log ]; then cp build.log .ci-logs/build.log; else echo "(no build.log)" > .ci-logs/build.log; fi
+          git add -f .ci-logs
+          git commit -m "ci log for ${GITHUB_SHA}"
+          git push -f origin ci-logs
